@@ -1,4 +1,4 @@
-package homework.withfsm
+package homework
 
 import akka.actor.{ActorSystem, Props}
 
@@ -7,7 +7,7 @@ import scala.concurrent.duration.Duration
 
 object AuctionApp extends App {
 
-  val system = ActorSystem("WithFSM")
+  val system = ActorSystem("AuctionSystem")
 
   val mainActor = system.actorOf(Props[AuctionService], "mainActor")
 

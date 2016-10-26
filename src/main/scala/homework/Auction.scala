@@ -1,11 +1,13 @@
-package homework.withfsm
+package homework
 
 import akka.actor.{ActorRef, LoggingFSM}
-import homework.withfsm.Auction._
+import Auction._
 
 import scala.concurrent.duration.FiniteDuration
 
-class Auction(id: Int, bidTime: FiniteDuration, deleteTime: FiniteDuration) extends LoggingFSM[State, Data]{
+class Auction(val id: String,
+              bidTime: FiniteDuration,
+              deleteTime: FiniteDuration) extends LoggingFSM[State, Data]{
 
   startWith(Created, AuctionData(0, None))
   setTimer("bidTimer", BidTimerExpired, bidTime)
@@ -44,6 +46,7 @@ class Auction(id: Int, bidTime: FiniteDuration, deleteTime: FiniteDuration) exte
       }
     case Event(BidTimerExpired, a:AuctionData) =>
       a.buyer.get ! YouWonTheAuction(a.price)
+      context.parent ! Auction.AuctionFinished(id, a.price, a.buyer.get)
       setTimer("deleteTimer", DeleteTimerExpired, deleteTime)
       goto(Sold) using a
   }
@@ -57,13 +60,15 @@ class Auction(id: Int, bidTime: FiniteDuration, deleteTime: FiniteDuration) exte
 
 object Auction {
 
-  def apply(id: Int, bidTime: FiniteDuration, deleteTime: FiniteDuration): Auction = new Auction(id, bidTime, deleteTime)
+  def apply(id: String, bidTime: FiniteDuration, deleteTime: FiniteDuration): Auction =
+    new Auction(id, bidTime, deleteTime)
 
   case object BidTimerExpired
   case object DeleteTimerExpired
   case object Relist
   case class Bid(price: BigDecimal, buyer: ActorRef)
   case class YouWonTheAuction(price: BigDecimal)
+  case class AuctionFinished(title: String, price: BigDecimal, buyer: ActorRef)
 
 
   sealed trait State
